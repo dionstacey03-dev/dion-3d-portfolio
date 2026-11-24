@@ -12,7 +12,7 @@ export function Contact() {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
@@ -21,20 +21,29 @@ export function Contact() {
       return;
     }
 
-    if (!formData.email.includes('@')) {
-      setStatus('error');
-      setErrorMessage('Please enter a valid email address.');
-      return;
-    }
-
     setStatus('submitting');
+    setErrorMessage('');
 
-    // Simulate clean frontend submission feedback
-    setTimeout(() => {
+    const subject = formData.subject.trim() || `Portfolio message from ${formData.name.trim()}`;
+    const message = [
+      `Name: ${formData.name.trim()}`,
+      `Email: ${formData.email.trim()}`,
+      `Subject: ${subject}`,
+      '',
+      formData.message.trim(),
+    ].join('\\n');
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard access is unavailable in this browser.');
+      }
+      await navigator.clipboard.writeText(message);
       setStatus('success');
       setFormData({ name: '', email: '', subject: '', message: '' });
-      setTimeout(() => setStatus('idle'), 6000);
-    }, 1000);
+    } catch {
+      setStatus('error');
+      setErrorMessage('Could not copy the message. Please contact Dion through LinkedIn instead.');
+    }
   };
 
   return (
@@ -129,7 +138,7 @@ export function Contact() {
               <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                 <div>
-                  <strong>Message Received!</strong> Thank you for reaching out, Dion will respond to your message shortly.
+                  <strong>Message copied!</strong> Paste it into your email or LinkedIn message to send it. This form does not send email automatically.
                 </div>
               </div>
             )}
@@ -197,7 +206,7 @@ export function Contact() {
                 className="w-full glass-button glass-button-primary py-4 text-sm font-bold flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
-                <span>{status === 'submitting' ? 'Sending Message...' : 'Send Message'}</span>
+                <span>{status === 'submitting' ? 'Preparing Message...' : 'Copy Message'}</span>
               </button>
             </form>
 
